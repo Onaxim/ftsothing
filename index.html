@@ -38,6 +38,9 @@
     <div class="container mx-auto px-3 md:px-0">
       <h1 class="text-xl font-bold text-indigo-700">FTSO Thing</h1>
       <p>See your rewards flowing</p>
+      <p class="text-xs text-gray-200">
+        This is just a prototype/test so may be buggy
+      </p>
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:w-6/12">
         <!-- Epoch Stats -->
@@ -148,7 +151,21 @@
           see some missing items.
         </p>
       </div>
-      <p class="text-xs text-gray-200">Visits: <span id="visits"></span></p>
+      <div class="flex justify-between md:w-6/12 pt-2">
+        <div class="text-xs text-gray-200 w-24">
+          Visits: <span id="visits"></span>
+        </div>
+        <div class="w-full text-right text-sm text-gray-300">
+          <input
+            id="providerUrl"
+            type="text"
+            class="w-72 rounded-md border-2 border-gray-100"
+            value="https://songbird-api.flare.network/ext/C/rpc"
+          />
+          <button onclick="setProvider()">Set</button> |
+          <button onclick="resetProvider()">Reset</button>
+        </div>
+      </div>
     </div>
   </body>
 </html>
@@ -201,7 +218,7 @@
           insertRow({
             epoch: data.rewardsDistributed.epoch,
             result: "Win",
-            reward: amountEarned.toFixed(2) + " SGB",
+            reward: amountEarned.toFixed(7) + " SGB",
           });
         } else {
           console.log("Not Rewarded this time");
@@ -232,6 +249,26 @@
 
   function cb(response) {
     document.getElementById("visits").innerText = response.value;
+  }
+
+  if (window.localStorage.getItem("rpcProvider") == "null") {
+    document.getElementById("providerUrl").value =
+      "https://songbird-api.flare.network/ext/C/rpc";
+  } else {
+    document.getElementById("providerUrl").value =
+      window.localStorage.getItem("rpcProvider");
+  }
+
+  function setProvider() {
+    window.localStorage.setItem(
+      "rpcProvider",
+      document.getElementById("providerUrl").value
+    );
+    location.reload();
+  }
+  function resetProvider() {
+    window.localStorage.setItem("rpcProvider", null);
+    location.reload();
   }
 
   async function submitAddress() {
@@ -284,6 +321,11 @@
 
     let result = await EntryPoint.getUserRewards(userAddress);
     userRewardState.dataProviders = result._dataProviders;
+
+    if (!result._dataProviders.length) {
+      alert("address has no delegations");
+      return;
+    }
 
     if (userRewardState.dataProviders.length == 1) {
       document.getElementById("ftsoA").src = EntryPoint.getDataProviderEmblem(

@@ -14,8 +14,14 @@ const ftsoManagerAbi = __webpack_require__(/*! ./songbird/FtsoManager.json */ ".
 const ftsoAbi = __webpack_require__(/*! ./songbird/Ftso.json */ "./songbird/Ftso.json");
 const ftsoList = __webpack_require__(/*! ./assets/ftsoList.json */ "./assets/ftsoList.json");
 
-const provider = new ethers.providers.JsonRpcProvider({
-  url: "https://songbird-api.flare.network/ext/C/rpc",
+let providerUrl = "https://songbird-api.flare.network/ext/C/rpc";
+
+if (window.localStorage.getItem("rpcProvider") !== "null") {
+  providerUrl = window.localStorage.getItem("rpcProvider");
+}
+
+var provider = new ethers.providers.JsonRpcProvider({
+  url: providerUrl,
   timeout: 60000,
 });
 
@@ -102,6 +108,12 @@ const sgbContract = new ethers.Contract(
 })();
 
 module.exports = {
+  setProvider: function (url) {
+    provider = new ethers.providers.JsonRpcProvider({
+      url: url,
+      timeout: 60000,
+    });
+  },
   submit: async function () {
     console.log(ftsoRewardManagerAbi);
     let currentBlock = await provider.getBlockNumber();
