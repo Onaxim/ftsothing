@@ -1,29 +1,381 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>Page Title</title>
+    <title>Ftso Thing</title>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="./styles/sakura.css" type="text/css" />
+    <link rel="stylesheet" href="./styles/output.css" type="text/css" />
     <script src="_bundle.js"></script>
+    <script src="/js/circle-progress.min.js"></script>
+    <script src="./js/ethers.min.js" type="application/javascript"></script>
+    <script src="./js/math.min.js" type="application/javascript"></script>
+    <!-- <script src="./js/countUp.min.js" type="application/javascript"></script> -->
+    <script src="./js/countUp.min.js" type="module"></script>
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"
+    />
   </head>
   <body>
-    <h1>FTSO Thing</h1>
-    <p>See your rewards flowing</p>
+    <div class="container mx-auto px-3 md:px-0">
+      <h1 class="text-xl font-bold text-indigo-700">FTSO Thing</h1>
+      <p>See your rewards flowing</p>
 
-    <p>
-      <label for="input__text">Your Songbird Address</label>
-      <input id="input__text" placeholder="Address" type="text" />
-      <input
-        id="address_button"
-        type="submit"
-        value="Submit"
-        onclick="EntryPoint.submit()"
-      />
-    </p>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:w-6/12">
+        <!-- Epoch Stats -->
+        <div class="border-2 border-gray-200 rounded-md">
+          <div class="p-6 grid grid-cols-2 gap-3">
+            <div class="grid justify-items-center">
+              <div class="submitProg mx-4 relative">
+                <div class="absolute w-full mt-16">
+                  <p
+                    id="currentEpochA"
+                    class="text-center text-xs text-gray-500"
+                  >
+                    -
+                  </p>
+                </div>
+              </div>
+              <p class="text-sm py-2 font-bold text-indigo-700">
+                Submit Period
+              </p>
+            </div>
 
-    <div>
-      <img id="dp_address" src="" alt="" />
+            <div class="grid justify-items-center">
+              <div class="revealProg mx-4 relative">
+                <div class="absolute w-full mt-16">
+                  <p
+                    id="currentEpochB"
+                    class="text-center text-xs text-gray-500"
+                  >
+                    -
+                  </p>
+                </div>
+              </div>
+              <p class="text-sm py-2 font-bold text-indigo-700">
+                Reveal Period
+              </p>
+            </div>
+          </div>
+          <p class="text-center text-gray-400 text-sm">
+            Finalization occurs shortly after reveal period.
+          </p>
+        </div>
+        <!-- User -->
+        <div class="p-12 flex border-2 border-gray-200 rounded-md">
+          <div
+            class="relative rounded-full bg-gray-100 w-28 h-28 mx-auto my-auto"
+          >
+            <div class="absolute w-full my-10">
+              <p id="usdEarningsContainer" class="text-center text-sm">
+                $<span id="usdEarnings"></span>
+              </p>
+              <p class="text-center text-xs text-gray-400">
+                <span id="sgbEarnings"></span>SGB
+              </p>
+            </div>
+            <div class="absolute theSmiley ml-7 mt-7">
+              <img
+                id="ftsoA"
+                class="item hidden"
+                style="animation-delay: 0s"
+                src="https://www.kirupa.com/icon/1f951.svg"
+              />
+              <img
+                id="ftsoB"
+                class="item hidden"
+                style="animation-delay: -6s"
+                src="https://www.kirupa.com/icon/1f370.svg"
+              />
+            </div>
+            <p class="text-center text-sm mt-28 text-gray-400 font-bold">
+              Earnings
+            </p>
+            <p class="text-center text-xs text-gray-200" id="sgbPriceUsd">-</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="border-2 border-gray-200 rounded-md md:w-6/12 mt-4 p-3">
+        <div>
+          <label class="" for="input__text">Songbird Address</label>
+        </div>
+        <input
+          class="bg-indigo-50 py-1 px-2 rounded-md w-80"
+          id="userAddressInput"
+          placeholder="Address"
+          type="text"
+          value=""
+        />
+        <input
+          class="bg-gray-100 border-solid border-2 border-gray-200 px-3 py-1 rounded-md"
+          id="address_button"
+          type="submit"
+          value="Set"
+          onclick="submitAddress()"
+        />
+
+        <div class="pt-3">
+          <table class="text-left" id="resultTable">
+            <tr>
+              <th>Epoch</th>
+              <th>Result</th>
+              <th>Reward</th>
+            </tr>
+            <tr></tr>
+          </table>
+        </div>
+        <p class="text-left text-gray-400 text-sm">
+          Sometimes the node doesn't send the finalization event so you might
+          see some missing items.
+        </p>
+      </div>
     </div>
   </body>
 </html>
+<script>
+  var money1 = new Audio("./assets/money1.mp3");
+  var money2 = new Audio("./assets/money2.mp3");
+  var soundEnabled = true;
+
+  var submitProg = new CircleProgress(".submitProg");
+  var revealProg = new CircleProgress(".revealProg");
+
+  var userAddress = "";
+  var userRewardState = { dataProviders: [], rewardAmounts: [] };
+  var oldUserRewardAmount = 0;
+  var lastFinalizedEpoch = 0;
+  var sgbPrice = 0;
+
+  var usdValueCountUp;
+  var sgbValueCountUp;
+
+  var results = [
+    { win: true, amount: 1, epoch: 1 },
+    { win: true, amount: 2, epoch: 2 },
+    { win: false, amount: 0, epoch: 1 },
+  ];
+
+  setInterval(async () => {
+    console.log(EntryPoint.getData());
+    const data = EntryPoint.getData();
+
+    //
+    if (data.rewardsDistributed.epoch > lastFinalizedEpoch) {
+      lastFinalizedEpoch = data.rewardsDistributed.epoch;
+      console.log("==== NEW DISTRIBUTION =====");
+
+      if (userAddress.length) {
+        let rewarded = userRewardState.dataProviders.some(
+          (r) => data.rewardsDistributed.addresses.indexOf(r) >= 0
+        );
+
+        if (rewarded) {
+          await updateUserRewards();
+          let amountEarned =
+            math.sum(userRewardState.rewardAmounts) - oldUserRewardAmount;
+          console.log({
+            rewardAmounts: math.sum(userRewardState.rewardAmounts),
+            old: oldUserRewardAmount,
+          });
+          console.log(`Earned ${amountEarned} SGB`);
+          insertRow({
+            epoch: data.rewardsDistributed.epoch,
+            result: "Win",
+            reward: amountEarned.toFixed(2) + " SGB",
+          });
+        } else {
+          console.log("Not Rewarded this time");
+          insertRow({
+            epoch: data.rewardsDistributed.epoch,
+            result: "Miss",
+            reward: "N/A",
+          });
+        }
+      }
+    }
+
+    // Submit Progress
+    submitProg.max = 180;
+    submitProg.value = data.timeTillSubmitEnd;
+    submitProg.clockwise = false;
+    submitProg.indeterminateText = "-";
+    // Reveal Progress
+    revealProg.max = 90;
+    revealProg.value = data.timeTillRevealEnd;
+    revealProg.clockwise = false;
+    revealProg.indeterminateText = "-";
+
+    document.getElementById("currentEpochA").innerHTML = data.currentEpoch;
+    document.getElementById("currentEpochB").innerHTML =
+      data.timeTillRevealEnd < 0 ? "Waiting" : data.currentEpoch - 1;
+  }, 1000);
+
+  async function submitAddress() {
+    //     insertRow({ epoch: Date.now() / 10000, result: "Win", reward: "200 SGB" });
+
+    sgbPrice = (await EntryPoint.getSgbPrice())._price / 10 ** 5;
+    document.getElementById("sgbPriceUsd").innerHTML = `SGB = $${sgbPrice}`;
+
+    if (document.getElementById("userAddressInput").value == userAddress)
+      return;
+    userAddress = document.getElementById("userAddressInput").value;
+    updateUserRewards();
+  }
+
+  function insertRow(data) {
+    // Find a <table> element with id="myTable":
+    var table = document.getElementById("resultTable");
+
+    // Create an empty <tr> element and add it to the 1st position of the table:
+    var row = table.insertRow(1);
+
+    // Insert new cells (<td> elements) at the 1st and 2nd position of the "new" <tr> element:
+    var cell1 = row.insertCell(0);
+    var cell2 = row.insertCell(1);
+    var cell3 = row.insertCell(2);
+
+    // Add some text to the new cells:
+    cell1.innerHTML = data.epoch;
+    cell2.innerHTML = data.result;
+    cell3.innerHTML = data.reward;
+  }
+
+  async function updateUserRewards() {
+    document
+      .getElementById("usdEarningsContainer")
+      .classList.remove(
+        "animate__animated",
+        "animate__tada",
+        "animate__slower"
+      );
+
+    let first = true;
+
+    if (userRewardState.rewardAmounts.length) {
+      oldUserRewardAmount = math.sum(userRewardState.rewardAmounts);
+      userRewardState.rewardAmounts = [];
+      first = false;
+    }
+    console.log(first);
+
+    let result = await EntryPoint.getUserRewards(userAddress);
+    userRewardState.dataProviders = result._dataProviders;
+
+    if (userRewardState.dataProviders.length == 1) {
+      document.getElementById("ftsoA").src = EntryPoint.getDataProviderEmblem(
+        userRewardState.dataProviders[0]
+      );
+      document.getElementById("ftsoA").classList.remove("hidden");
+    }
+    if (userRewardState.dataProviders.length == 2) {
+      document.getElementById("ftsoA").src = EntryPoint.getDataProviderEmblem(
+        userRewardState.dataProviders[0]
+      );
+      document.getElementById("ftsoB").src = EntryPoint.getDataProviderEmblem(
+        userRewardState.dataProviders[1]
+      );
+      document.getElementById("ftsoA").classList.remove("hidden");
+      document.getElementById("ftsoB").classList.remove("hidden");
+    }
+
+    for (let ra of result._rewardAmounts) {
+      userRewardState.rewardAmounts.push(
+        Number(ethers.utils.formatUnits(ra, 18))
+      );
+    }
+    console.log({ userAddress, userRewardState });
+
+    let usdVal = math.sum(userRewardState.rewardAmounts) * sgbPrice;
+    let sgbVal = math.sum(userRewardState.rewardAmounts);
+    if (first) {
+      usdValueCountUp = new countUp.CountUp("usdEarnings", usdVal, {
+        decimalPlaces: usdVal < 0.01 ? 4 : 2,
+        duration: 2,
+      });
+      sgbValueCountUp = new countUp.CountUp("sgbEarnings", sgbVal, {
+        decimalPlaces: 2,
+        duration: 2,
+      });
+      money1.play();
+      usdValueCountUp.start();
+      sgbValueCountUp.start();
+    } else {
+      money1.play();
+      usdValueCountUp.update(usdVal);
+      sgbValueCountUp.update(sgbVal);
+    }
+
+    document
+      .getElementById("usdEarningsContainer")
+      .classList.add("animate__animated", "animate__tada", "animate__slower");
+  }
+</script>
+<style>
+  th,
+  td {
+    padding-right: 24px;
+    padding-bottom: 3px;
+  }
+
+  .circle-progress-value {
+    stroke-width: 6px;
+    stroke: #4338ca;
+    stroke-linecap: round;
+  }
+
+  .circle-progress-circle {
+    stroke-width: 6px;
+    stroke: #eee;
+  }
+  .circle-progress-text {
+    font-weight: bold;
+    fill: #4338ca;
+  }
+
+  .main {
+    width: 500px;
+    height: 350px;
+    background-color: #f2f7f2;
+    border-color: #eee;
+    border-radius: 10px;
+    border-width: 2px;
+
+    display: grid;
+    justify-content: center;
+    align-content: center;
+  }
+
+  .main > * {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .theSmiley {
+    align-self: center;
+    justify-self: center;
+    width: 50px;
+    height: 50px;
+  }
+
+  .orange img {
+    width: 50px;
+    display: block;
+    margin: 0 auto;
+    margin-top: 50px;
+  }
+
+  .item {
+    animation: spinAround 12s linear infinite;
+  }
+
+  @keyframes spinAround {
+    from {
+      transform: rotate(0deg) translate(100px);
+    }
+    to {
+      transform: rotate(360deg) translate(100px);
+    }
+  }
+</style>
