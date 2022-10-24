@@ -15,7 +15,7 @@ const ftsoAbi = __webpack_require__(/*! ./songbird/Ftso.json */ "./songbird/Ftso
 const ftsoList = __webpack_require__(/*! ./assets/ftsoList.json */ "./assets/ftsoList.json");
 
 let providerUrl = "https://songbird-api.flare.network/ext/C/rpc";
-
+window.localStorage.setItem("rpcProvider", providerUrl);
 if (window.localStorage.getItem("rpcProvider") !== "null") {
   providerUrl = window.localStorage.getItem("rpcProvider");
 }

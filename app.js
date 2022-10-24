@@ -5,7 +5,7 @@ const ftsoAbi = require("./songbird/Ftso.json");
 const ftsoList = require("./assets/ftsoList.json");
 
 let providerUrl = "https://songbird-api.flare.network/ext/C/rpc";
-
+window.localStorage.setItem("rpcProvider", providerUrl);
 if (window.localStorage.getItem("rpcProvider") !== "null") {
   providerUrl = window.localStorage.getItem("rpcProvider");
 }
