@@ -761,6 +761,18 @@ video {
   width: 15rem;
 }
 
+.w-8\/12 {
+  width: 66.666667%;
+}
+
+.w-9\/12 {
+  width: 75%;
+}
+
+.w-10\/12 {
+  width: 83.333333%;
+}
+
 .transform {
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
 }
@@ -1033,6 +1045,10 @@ video {
 
   .md\:w-6\/12 {
     width: 50%;
+  }
+
+  .md\:w-10\/12 {
+    width: 83.333333%;
   }
 
   .md\:grid-cols-2 {

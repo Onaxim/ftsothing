@@ -122,7 +122,7 @@
           <label class="" for="input__text">Songbird Address</label>
         </div>
         <input
-          class="bg-indigo-50 py-1 px-2 rounded-md w-80"
+          class="bg-indigo-50 py-1 px-2 rounded-md w-8/12 md:w-10/12"
           id="userAddressInput"
           placeholder="Address"
           type="text"
@@ -166,6 +166,11 @@
           <button onclick="resetProvider()">Reset</button>
         </div>
       </div>
+
+      <p class="text-left text-gray-200 text-sm pt-2">
+        Notice: Stores provided public address in browser to save when you
+        return.
+      </p>
     </div>
   </body>
 </html>
@@ -195,6 +200,11 @@
   setInterval(async () => {
     //     console.log(EntryPoint.getData());
     const data = EntryPoint.getData();
+
+    if (window.localStorage.getItem("userAddress") !== null) {
+      document.getElementById("userAddressInput").value =
+        window.localStorage.getItem("userAddress");
+    }
 
     //
     if (data.rewardsDistributed.epoch > lastFinalizedEpoch) {
@@ -280,6 +290,10 @@
     if (document.getElementById("userAddressInput").value == userAddress)
       return;
     userAddress = document.getElementById("userAddressInput").value;
+    window.localStorage.setItem(
+      "userAddress",
+      document.getElementById("userAddressInput").value
+    );
     updateUserRewards();
   }
 
